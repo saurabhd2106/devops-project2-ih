@@ -1,0 +1,112 @@
+name: Infra — Terraform Plan (and optional Apply)
+
+on:
+  workflow_dispatch:
+  pull_request:
+    branches: [ main ]
+  push:
+    branches: [ main ]
+    paths: [ "infra/terraform/**" ]
+
+permissions:
+  contents: read
+
+jobs:
+  plan:
+    name: Terraform Plan
+    runs-on: ubuntu-latest
+    permissions:
+      id-token: write           # مطلوب لـ OIDC
+      contents: read
+    defaults:
+      run:
+        working-directory: infra/terraform
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      # تسجيل دخول Azure عبر OIDC (بدون ARM_* Secrets)
+      - name: Azure Login (OIDC)
+        uses: azure/login@v2
+        with:
+          client-id:      ${{ secrets.AZURE_CLIENT_ID }}
+          tenant-id:      ${{ secrets.AZURE_TENANT_ID }}
+          subscription-id:${{ secrets.AZURE_SUBSCRIPTION_ID }}
+
+      # (اختياري) طباعة الحساب النشط للتأكد
+      - name: az account show
+        run: az account show -o table
+
+      - name: Setup Terraform
+        uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_version: 1.9.6
+          terraform_wrapper: false
+
+      - name: Terraform init
+        run: terraform init -input=false -reconfigure -upgrade
+
+      - name: Terraform fmt (auto-fix & check)
+        run: |
+          terraform fmt -recursive
+          terraform fmt -check
+
+      - name: Terraform validate
+        run: terraform validate
+
+      - name: Terraform plan
+        id: plan
+        run: terraform plan -no-color -out=tfplan.binary
+        env:
+          # متغيرات Terraform (حساسة/غير حساسة)
+          TF_VAR_admin_ssh_pubkey:    ${{ vars.TF_VAR_admin_ssh_pubkey }}
+          TF_VAR_sql_admin_password:  ${{ secrets.TF_VAR_sql_admin_password }}
+          # لضمان اختيار الاشتراك/التيننت مع مزود azurerm v4
+          TF_VAR_subscription_id:     ${{ secrets.AZURE_SUBSCRIPTION_ID }}
+          TF_VAR_tenant_id:           ${{ secrets.AZURE_TENANT_ID }}
+
+      - name: Upload plan
+        uses: actions/upload-artifact@v4
+        with:
+          name: tfplan
+          path: infra/terraform/tfplan.binary
+
+  # (اختياري) تطبيق — فعّليه إذا تبغين Apply تلقائيًا بعد الدمج/التشغيل اليدوي
+  apply:
+    if: github.event_name == 'workflow_dispatch' || (github.event_name == 'push' && github.ref == 'refs/heads/main')
+    needs: plan
+    runs-on: ubuntu-latest
+    environment: prod
+    permissions:
+      id-token: write
+      contents: read
+    defaults:
+      run:
+        working-directory: infra/terraform
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Azure Login (OIDC)
+        uses: azure/login@v2
+        with:
+          client-id:      ${{ secrets.AZURE_CLIENT_ID }}
+          tenant-id:      ${{ secrets.AZURE_TENANT_ID }}
+          subscription-id:${{ secrets.AZURE_SUBSCRIPTION_ID }}
+
+      - uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_version: 1.9.6
+          terraform_wrapper: false
+
+      - name: Terraform init
+        run: terraform init -input=false -reconfigure -upgrade
+
+      # الأبسط: أعدي الحساب مباشرة (بدون استرجاع tfplan.binary)
+      - name: Terraform apply
+        run: terraform apply -auto-approve -input=false
+        env:
+          TF_VAR_admin_ssh_pubkey:    ${{ vars.TF_VAR_admin_ssh_pubkey }}
+          TF_VAR_sql_admin_password:  ${{ secrets.TF_VAR_sql_admin_password }}
+          TF_VAR_subscription_id:     ${{ secrets.AZURE_SUBSCRIPTION_ID }}
+          TF_VAR_tenant_id:           ${{ secrets.AZURE_TENANT_ID }}

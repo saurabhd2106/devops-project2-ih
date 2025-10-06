@@ -1,29 +1,33 @@
-# Environment files
-.env
-.env.local
-.env.*.local
+# Terraform
+*.tfstate
+*.tfstate.*
+.terraform/
+*.tfvars
+override.tf
+override.tf.json
 
-# IDE
+# Azure credentials / secrets
+azure-credentials.json
+*.credentials.json
+*.env
+.env
+
+# SSH keys
+id_*.pub
+id_*
+teafp2
+teafp2.pub
+*.pem
+*.key
+
+# OS / Editor files
+.DS_Store
 .vscode/
 .idea/
-*.iml
+*.swp
 
-# OS
-.DS_Store
-Thumbs.db
 
-# Logs
-*.log
-npm-debug.log*
-yarn-debug.log*
-yarn-error.log*
-
-# Temporary files
-*.tmp
-*.temp
-
-**/**/.terraform/
-**/**/.terraform.lock.hcl
-**/**/*.tfstate
-**/**/target/
-
+infra/terraform/tfplan
+infra/terraform/tfplan.binary
+infra/terraform/.terraform/
+infra/terraform/*.tfstate*

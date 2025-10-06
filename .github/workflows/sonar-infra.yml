@@ -1,0 +1,51 @@
+name: Sonar — Infra (Terraform) analysis
+
+on:
+  workflow_dispatch:
+  pull_request:
+    paths:
+      - 'infra/**'
+      - '.github/workflows/sonar-infra.yml'
+
+jobs:
+  sonar-terraform:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Install tflint
+        run: curl -sL https://raw.githubusercontent.com/terraform-linters/tflint/master/install_linux.sh | bash
+
+      - name: Run tflint
+        working-directory: infra/terraform
+        run: tflint --init && tflint
+        continue-on-error: true
+
+      - name: Install tfsec
+        run: curl -sSL https://raw.githubusercontent.com/aquasecurity/tfsec/master/scripts/install_linux.sh | bash
+
+      - name: Run tfsec (SARIF & soft-fail)
+        working-directory: infra/terraform
+        run: tfsec --format sarif --out tfsec.sarif || true
+
+      - name: Upload tfsec SARIF
+        uses: github/codeql-action/upload-sarif@v3
+        with:
+          sarif_file: infra/terraform/tfsec.sarif
+
+      # SonarCloud (أسهل—ما يحتاج SONAR_HOST_URL)
+      - name: SonarCloud Scan (Terraform)
+        uses: SonarSource/sonarcloud-github-action@v2
+        env:
+          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+        with:
+          projectBaseDir: infra/terraform
+          args: >
+            -Dsonar.projectKey=${{ secrets.SONAR_PROJECT_KEY }}
+            -Dsonar.organization=${{ secrets.SONAR_ORGANIZATION }}
+            -Dsonar.sources=.
+            -Dsonar.exclusions=**/.terraform/**,**/*.tfstate*,**/dist/**,**/target/**

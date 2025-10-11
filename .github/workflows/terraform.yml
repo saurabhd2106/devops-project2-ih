@@ -25,7 +25,6 @@ permissions:
 env:
   TF_WORKDIR: devops/terraform
   TF_VERSION: 1.7.5
-  TARGET_ENV: dev
 
 jobs:
   fmt_validate_plan:
@@ -41,6 +40,14 @@ jobs:
         uses: azure/login@v1
         with:
           creds: ${{ secrets.AZURE_CREDENTIALS }}
+
+      - name: Export ARM_* for Terraform
+        shell: bash
+        run: |
+          echo "ARM_CLIENT_ID=$(jq -r .clientId <<< '${{ secrets.AZURE_CREDENTIALS }}')" >> $GITHUB_ENV
+          echo "ARM_CLIENT_SECRET=$(jq -r .clientSecret <<< '${{ secrets.AZURE_CREDENTIALS }}')" >> $GITHUB_ENV
+          echo "ARM_TENANT_ID=$(jq -r .tenantId <<< '${{ secrets.AZURE_CREDENTIALS }}')" >> $GITHUB_ENV
+          echo "ARM_SUBSCRIPTION_ID=$(jq -r .subscriptionId <<< '${{ secrets.AZURE_CREDENTIALS }}')" >> $GITHUB_ENV
 
       - name: Setup Terraform
         uses: hashicorp/setup-terraform@v3
@@ -81,6 +88,14 @@ jobs:
         uses: azure/login@v1
         with:
           creds: ${{ secrets.AZURE_CREDENTIALS }}
+
+      - name: Export ARM_* for Terraform
+        shell: bash
+        run: |
+          echo "ARM_CLIENT_ID=$(jq -r .clientId <<< '${{ secrets.AZURE_CREDENTIALS }}')" >> $GITHUB_ENV
+          echo "ARM_CLIENT_SECRET=$(jq -r .clientSecret <<< '${{ secrets.AZURE_CREDENTIALS }}')" >> $GITHUB_ENV
+          echo "ARM_TENANT_ID=$(jq -r .tenantId <<< '${{ secrets.AZURE_CREDENTIALS }}')" >> $GITHUB_ENV
+          echo "ARM_SUBSCRIPTION_ID=$(jq -r .subscriptionId <<< '${{ secrets.AZURE_CREDENTIALS }}')" >> $GITHUB_ENV
 
       - name: Setup Terraform
         uses: hashicorp/setup-terraform@v3

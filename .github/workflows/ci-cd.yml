@@ -1,0 +1,100 @@
+name: CI/CD — ACA + ACR
+
+on:
+  push:
+    branches: [ main ]
+    tags: [ 'v*.*.*' ]
+  pull_request:
+    branches: [ main ]
+  workflow_dispatch:
+
+concurrency:
+  group: ci-cd-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  id-token: write       
+  contents: read
+  packages: write
+
+env:
+  ACR_NAME: acralotaibi826
+  ACR_LOGIN_SERVER: acralotaibi826.azurecr.io
+  FE_IMAGE_NAME: frontend
+  BE_IMAGE_NAME: backend
+  IMAGE_TAG: ${{ github.sha }}
+
+jobs:
+  build_and_push:
+    name: Build & Push images to ACR
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      # تعديل التسجيل: OIDC بدل AZURE_CREDENTIALS
+      - name: Azure login (OIDC)
+        uses: azure/login@v2
+        with:
+          client-id: ${{ secrets.AZURE_CLIENT_ID }}
+          tenant-id: ${{ secrets.AZURE_TENANT_ID }}
+          subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
+
+      - name: Docker Buildx setup
+        uses: docker/setup-buildx-action@v3
+
+      - name: ACR login
+        run: az acr login --name $ACR_NAME --only-show-errors
+
+      - name: Build & push FRONTEND
+        uses: docker/build-push-action@v5
+        with:
+          context: ./frontend
+          file: ./frontend/Dockerfile
+          push: true
+          tags: |
+            ${{ env.ACR_LOGIN_SERVER }}/${{ env.FE_IMAGE_NAME }}:${{ env.IMAGE_TAG }}
+            ${{ env.ACR_LOGIN_SERVER }}/${{ env.FE_IMAGE_NAME }}:v11
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+      - name: Build & push BACKEND
+        uses: docker/build-push-action@v5
+        with:
+          context: ./backend
+          file: ./backend/Dockerfile
+          push: true
+          tags: |
+            ${{ env.ACR_LOGIN_SERVER }}/${{ env.BE_IMAGE_NAME }}:${{ env.IMAGE_TAG }}
+            ${{ env.ACR_LOGIN_SERVER }}/${{ env.BE_IMAGE_NAME }}:v8
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+  deploy:
+    name: Deploy to Azure Container Apps
+    needs: build_and_push
+    runs-on: ubuntu-latest
+    if: github.event_name != 'pull_request'   
+
+    steps:
+      - name: Azure login (OIDC)
+        uses: azure/login@v2
+        with:
+          client-id: ${{ secrets.AZURE_CLIENT_ID }}
+          tenant-id: ${{ secrets.AZURE_TENANT_ID }}
+          subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
+
+      - name: Deploy FRONTEND container
+        uses: azure/container-apps-deploy-action@v2
+        with:
+          resourceGroup:  ${{ secrets.AZ_RESOURCE_GROUP }}
+          containerAppName: ${{ secrets.ACA_FE_APP }}     
+          imageToDeploy: ${{ env.ACR_LOGIN_SERVER }}/${{ env.FE_IMAGE_NAME }}:${{ env.IMAGE_TAG }}
+
+      - name: Deploy BACKEND container
+        uses: azure/container-apps-deploy-action@v2
+        with:
+          resourceGroup:  ${{ secrets.AZ_RESOURCE_GROUP }}
+          containerAppName: ${{ secrets.ACA_BE_APP }}      # مثال: acabe-dev
+          imageToDeploy: ${{ env.ACR_LOGIN_SERVER }}/${{ env.BE_IMAGE_NAME }}:${{ env.IMAGE_TAG }}

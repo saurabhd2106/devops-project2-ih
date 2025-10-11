@@ -1,0 +1,100 @@
+name: Terraform CI/CD
+
+on:
+  pull_request:
+    branches: [ main ]
+  push:
+    branches: [ main ]
+  workflow_dispatch:
+    inputs:
+      target_env:
+        description: "Environment to apply (dev/prod)"
+        required: true
+        default: "dev"
+        type: choice
+        options: [ "dev", "prod" ]
+
+concurrency:
+  group: tf-${{ github.ref }}
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+  id-token: write
+
+env:
+  TF_WORKDIR: devops/terraform
+  TF_VERSION: 1.7.5
+  TARGET_ENV: dev
+
+jobs:
+  fmt_validate_plan:
+    name: fmt/validate/plan (dev)
+    runs-on: ubuntu-latest
+    if: github.event_name == 'pull_request' || github.event_name == 'push'
+    env:
+      TARGET_ENV: dev
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Azure login
+        uses: azure/login@v1
+        with:
+          creds: ${{ secrets.AZURE_CREDENTIALS }}
+
+      - name: Setup Terraform
+        uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_version: ${{ env.TF_VERSION }}
+
+      - name: Terraform init
+        working-directory: ${{ env.TF_WORKDIR }}
+        run: terraform init -upgrade
+
+      - name: Terraform fmt (check)
+        working-directory: ${{ env.TF_WORKDIR }}
+        run: terraform fmt -check -recursive
+
+      - name: Terraform validate
+        working-directory: ${{ env.TF_WORKDIR }}
+        run: terraform validate
+
+      - name: Terraform plan (dev)
+        working-directory: ${{ env.TF_WORKDIR }}
+        run: terraform plan -var-file="environments/${{ env.TARGET_ENV }}/main.tfvars" -out=tfplan-dev.bin
+
+      - name: Upload plan (artifact)
+        uses: actions/upload-artifact@v4
+        with:
+          name: tfplan-dev
+          path: ${{ env.TF_WORKDIR }}/tfplan-dev.bin
+
+  apply_manual:
+    name: apply (manual env)
+    runs-on: ubuntu-latest
+    if: github.event_name == 'workflow_dispatch'
+    environment: ${{ inputs.target_env }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Azure login
+        uses: azure/login@v1
+        with:
+          creds: ${{ secrets.AZURE_CREDENTIALS }}
+
+      - name: Setup Terraform
+        uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_version: ${{ env.TF_VERSION }}
+
+      - name: Terraform init
+        working-directory: ${{ env.TF_WORKDIR }}
+        run: terraform init -upgrade
+
+      - name: Terraform plan (${{ inputs.target_env }})
+        working-directory: ${{ env.TF_WORKDIR }}
+        run: terraform plan -var-file="environments/${{ inputs.target_env }}/main.tfvars" -out="tfplan-${{ inputs.target_env }}.bin"
+
+      - name: Terraform apply (${{ inputs.target_env }})
+        working-directory: ${{ env.TF_WORKDIR }}
+        run: terraform apply -auto-approve "tfplan-${{ inputs.target_env }}.bin"

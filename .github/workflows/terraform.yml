@@ -69,7 +69,7 @@ jobs:
 
       - name: Terraform plan (dev)
         working-directory: ${{ env.TF_WORKDIR }}
-        run: terraform plan -input=false -var-file="environments/${{ env.TARGET_ENV }}/main.tfvars" -out=tfplan-dev.bin
+        run: terraform plan -input=false -lock-timeout=300s -var-file="environments/${{ env.TARGET_ENV }}/main.tfvars" -out=tfplan-dev.bin
 
       - name: Upload plan (artifact)
         uses: actions/upload-artifact@v4
@@ -110,8 +110,8 @@ jobs:
 
       - name: Terraform plan (${{ inputs.target_env }})
         working-directory: ${{ env.TF_WORKDIR }}
-        run: terraform plan -input=false -var-file="environments/${{ inputs.target_env }}/main.tfvars" -out="tfplan-${{ inputs.target_env }}.bin"
+        run: terraform plan -input=false -lock-timeout=300s -var-file="environments/${{ inputs.target_env }}/main.tfvars" -out="tfplan-${{ inputs.target_env }}.bin"
 
       - name: Terraform apply (${{ inputs.target_env }})
         working-directory: ${{ env.TF_WORKDIR }}
-        run: terraform apply -input=false -auto-approve "tfplan-${{ inputs.target_env }}.bin"
+        run: terraform apply -input=false -lock-timeout=300s -auto-approve "tfplan-${{ inputs.target_env }}.bin"

@@ -33,8 +33,7 @@ nsg_rules = [
 
 private_endpoints = {}
 
-sql_admin_login    = "sqladmin"
-sql_admin_password = "CHANGE-ME"
+sql_admin_login    = "sqladmin" 
 
 frontend_image = "acralotaibi826.azurecr.io/frontend:v11"
 backend_image  = "acralotaibi826.azurecr.io/backend:v9"
@@ -57,6 +56,7 @@ acr_resource_group = "rg-dev-Abdullah-Alotaibi"
 enable_diagnostics           = false 
 log_analytics_workspace_name = "la-workspace-name"
 log_analytics_workspace_rg   = "rg-dev-Abdullah-Alotaibi"
+
 
 
 

@@ -53,4 +53,5 @@ backend_min_replicas  = 1
 backend_max_replicas  = 3
 
 acr_name           = "acralotaibi826"
-acr_resource_group = "rg-prod-Abdullah-Alotaibi"
+acr_resource_group = "rg-dev-Abdullah-Alotaibi"
+

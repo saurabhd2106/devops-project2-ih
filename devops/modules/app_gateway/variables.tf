@@ -31,9 +31,10 @@ variable "log_analytics_workspace_rg" {
   default = null
 }
 
-
+variable "autoscale_min_capacity" { type = number }
+variable "autoscale_max_capacity" { type = number }
 
 variable "tags" {
   type    = map(string)
   default = {}
-}
+}  

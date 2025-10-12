@@ -27,3 +27,7 @@ yarn-error.log*
 **/**/*.tfstate
 **/**/target/
 
+*.terraform/
+*.tfvars
+*.tfstate
+*.tfstate.*.git_backup/

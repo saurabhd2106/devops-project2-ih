@@ -16,15 +16,26 @@ variable "log_analytics_workspace_id" {
   default = null
 }
 
-variable "autoscale_min_capacity" {
-  type    = number
-  default = 1
+variable "enable_diagnostics" {
+  type    = bool
+  default = false
 }
 
-variable "autoscale_max_capacity" {
-  type    = number
-  default = 3
+variable "log_analytics_workspace_id" {
+  type    = string
+  default = null
 }
+
+variable "log_analytics_workspace_name" {
+  type    = string
+  default = null
+}
+
+variable "log_analytics_workspace_rg" {
+  type    = string
+  default = null
+}
+
 
 variable "tags" {
   type    = map(string)

@@ -117,13 +117,14 @@ resource "azurerm_application_gateway" "agw" {
 }
 
 resource "azurerm_monitor_diagnostic_setting" "agw_diag" {
-  count                      = var.log_analytics_workspace_id == null ? 0 : 1
-  name                       = "agw-diag"
-  target_resource_id         = azurerm_application_gateway.agw.id
-  log_analytics_workspace_id = var.log_analytics_workspace_id
+  count                       = var.enable_diagnostics ? 1 : 0
+  name                        = "agw-diag"
+  target_resource_id          = azurerm_application_gateway.agw.id
+  log_analytics_workspace_id  = local.workspace_id
 
   enabled_log    { category = "ApplicationGatewayAccessLog" }
   enabled_log    { category = "ApplicationGatewayPerformanceLog" }
   enabled_log    { category = "ApplicationGatewayFirewallLog" }
   enabled_metric { category = "AllMetrics" }
 }
+

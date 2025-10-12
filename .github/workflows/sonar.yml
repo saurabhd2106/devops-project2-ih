@@ -53,36 +53,6 @@ jobs:
           -Dsonar.coverage.jacoco.xmlReportPaths=target/site/jacoco/jacoco.xml
           -Dsonar.newCode.referenceBranch=main
 
-      # (B) إن كان الـbackend Node/TS Jest + lcov (احذف بلوكات Java فوق واستعمل هذا)
-      # - name: Setup Node
-      #   uses: actions/setup-node@v4
-      #   with:
-      #     node-version: 20
-      #     cache: npm
-      #
-      # - name: Install deps
-      #   run: npm ci
-      #
-      # - name: Tests + Coverage
-      #   run: npm run test:coverage
-      #
-      # - name: SonarCloud Scan (Node)
-      #   uses: SonarSource/sonarcloud-github-action@v2
-      #   env:
-      #     SONAR_TOKEN:   ${{ secrets.SONAR_TOKEN }}
-      #     GITHUB_TOKEN:  ${{ secrets.GITHUB_TOKEN }}
-      #   with:
-      #     projectBaseDir: .
-      #     args: >
-      #       -Dsonar.organization=${{ secrets.SONAR_ORG }}
-      #       -Dsonar.projectKey=${{ secrets.SONAR_PROJECT_KEY_BE }}
-      #       -Dsonar.sources=src
-      #       -Dsonar.tests=src
-      #       -Dsonar.test.inclusions=**/*.test.ts,**/*.test.tsx,**/*.spec.ts
-      #       -Dsonar.exclusions=**/node_modules/**,**/dist/**,**/build/**
-      #       -Dsonar.javascript.lcov.reportPaths=coverage/lcov.info
-      #       -Dsonar.newCode.referenceBranch=main
-
       - name: Upload Coverage (artifact)
         if: always()
         uses: actions/upload-artifact@v4

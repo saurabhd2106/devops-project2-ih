@@ -48,6 +48,7 @@ jobs:
           echo "ARM_CLIENT_SECRET=$(jq -r .clientSecret <<< '${{ secrets.AZURE_CREDENTIALS }}')" >> $GITHUB_ENV
           echo "ARM_TENANT_ID=$(jq -r .tenantId <<< '${{ secrets.AZURE_CREDENTIALS }}')" >> $GITHUB_ENV
           echo "ARM_SUBSCRIPTION_ID=$(jq -r .subscriptionId <<< '${{ secrets.AZURE_CREDENTIALS }}')" >> $GITHUB_ENV
+          echo "ARM_USE_AZURECLI=false" >> $GITHUB_ENV
 
       - name: Setup Terraform
         uses: hashicorp/setup-terraform@v3
@@ -56,7 +57,7 @@ jobs:
 
       - name: Terraform init
         working-directory: ${{ env.TF_WORKDIR }}
-        run: terraform init -upgrade
+        run: terraform init -upgrade -input=false
 
       - name: Terraform fmt (check)
         working-directory: ${{ env.TF_WORKDIR }}
@@ -68,7 +69,7 @@ jobs:
 
       - name: Terraform plan (dev)
         working-directory: ${{ env.TF_WORKDIR }}
-        run: terraform plan -var-file="environments/${{ env.TARGET_ENV }}/main.tfvars" -out=tfplan-dev.bin
+        run: terraform plan -input=false -var-file="environments/${{ env.TARGET_ENV }}/main.tfvars" -out=tfplan-dev.bin
 
       - name: Upload plan (artifact)
         uses: actions/upload-artifact@v4
@@ -96,6 +97,7 @@ jobs:
           echo "ARM_CLIENT_SECRET=$(jq -r .clientSecret <<< '${{ secrets.AZURE_CREDENTIALS }}')" >> $GITHUB_ENV
           echo "ARM_TENANT_ID=$(jq -r .tenantId <<< '${{ secrets.AZURE_CREDENTIALS }}')" >> $GITHUB_ENV
           echo "ARM_SUBSCRIPTION_ID=$(jq -r .subscriptionId <<< '${{ secrets.AZURE_CREDENTIALS }}')" >> $GITHUB_ENV
+          echo "ARM_USE_AZURECLI=false" >> $GITHUB_ENV
 
       - name: Setup Terraform
         uses: hashicorp/setup-terraform@v3
@@ -104,12 +106,12 @@ jobs:
 
       - name: Terraform init
         working-directory: ${{ env.TF_WORKDIR }}
-        run: terraform init -upgrade
+        run: terraform init -upgrade -input=false
 
       - name: Terraform plan (${{ inputs.target_env }})
         working-directory: ${{ env.TF_WORKDIR }}
-        run: terraform plan -var-file="environments/${{ inputs.target_env }}/main.tfvars" -out="tfplan-${{ inputs.target_env }}.bin"
+        run: terraform plan -input=false -var-file="environments/${{ inputs.target_env }}/main.tfvars" -out="tfplan-${{ inputs.target_env }}.bin"
 
       - name: Terraform apply (${{ inputs.target_env }})
         working-directory: ${{ env.TF_WORKDIR }}
-        run: terraform apply -auto-approve "tfplan-${{ inputs.target_env }}.bin"
+        run: terraform apply -input=false -auto-approve "tfplan-${{ inputs.target_env }}.bin"

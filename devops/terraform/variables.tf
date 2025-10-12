@@ -41,8 +41,15 @@ variable "sql_admin_password" {
   sensitive = true
 }
 
-variable "frontend_image" { type = string }
-variable "backend_image"  { type = string }
+variable "frontend_image" {
+  type = string
+  description = "Full image reference for FE (e.g. acr.azurecr.io/frontend:<sha>)"
+}
+
+variable "backend_image" {
+  type = string
+  description = "Full image reference for BE (e.g. acr.azurecr.io/backend:<sha>)"
+}
 variable "frontend_port"  { type = number }
 variable "backend_port"   { type = number }
 

@@ -6,6 +6,7 @@ on:
     branches: [ main ]
   pull_request:
     branches: [ main ]
+  workflow_dispatch:
 
 permissions:
   contents: read
@@ -17,16 +18,15 @@ jobs:
     runs-on: ubuntu-latest
     defaults:
       run:
-        working-directory: ./backend
+        working-directory: backend
+
     steps:
       - name: Checkout
         uses: actions/checkout@v4
-        with: { fetch-depth: 0 }
+        with:
+          fetch-depth: 0
 
-      # ====== اختر (A) أو (B) حسب تقنية الـbackend ======
-      # (A) إن كان الـbackend Java/Maven + JaCoCo
-      - name: Setup Java
-        if: ${{ !cancelled() }}
+      - name: Setup Java 21 + Maven cache
         uses: actions/setup-java@v4
         with:
           distribution: temurin
@@ -34,33 +34,31 @@ jobs:
           cache: maven
 
       - name: Tests + Coverage (Maven)
-        if: ${{ !cancelled() }}
         run: mvn -B clean verify
 
-      - name: SonarCloud Scan (Maven)
-        if: ${{ !cancelled() }}
+      - name: SonarCloud Scan (Backend)
+        uses: SonarSource/sonarcloud-github-action@v2
         env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           SONAR_TOKEN:  ${{ secrets.SONAR_TOKEN }}
-        run: >
-          mvn sonar:sonar
-          -Dsonar.organization=${{ secrets.SONAR_ORG }}
-          -Dsonar.projectKey=${{ secrets.SONAR_PROJECT_KEY_BE }}
-          -Dsonar.host.url=https://sonarcloud.io
-          -Dsonar.sources=src/main
-          -Dsonar.tests=src/test
-          -Dsonar.java.binaries=target/classes
-          -Dsonar.coverage.jacoco.xmlReportPaths=target/site/jacoco/jacoco.xml
-          -Dsonar.newCode.referenceBranch=main
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          projectBaseDir: backend
+          args: >
+            -Dsonar.organization=${{ secrets.SONAR_ORG }}
+            -Dsonar.projectKey=${{ secrets.SONAR_PROJECT_KEY_BE }}
+            -Dsonar.sources=src/main
+            -Dsonar.tests=src/test
+            -Dsonar.java.binaries=target/classes
+            -Dsonar.coverage.jacoco.xmlReportPaths=target/site/jacoco/jacoco.xml
+            -Dsonar.exclusions=**/target/**,**/node_modules/**
+            -Dsonar.newCode.referenceBranch=main
 
-      - name: Upload Coverage (artifact)
+      - name: Upload Coverage (Backend)
         if: always()
         uses: actions/upload-artifact@v4
         with:
           name: backend-coverage
-          path: |
-            backend/target/site/jacoco/
-            backend/coverage/
+          path: backend/target/site/jacoco/
           retention-days: 7
 
   frontend-analysis:
@@ -68,13 +66,15 @@ jobs:
     runs-on: ubuntu-latest
     defaults:
       run:
-        working-directory: ./frontend
+        working-directory: frontend
+
     steps:
       - name: Checkout
         uses: actions/checkout@v4
-        with: { fetch-depth: 0 }
+        with:
+          fetch-depth: 0
 
-      - name: Setup Node
+      - name: Setup Node 20 + npm cache
         uses: actions/setup-node@v4
         with:
           node-version: 20
@@ -84,9 +84,9 @@ jobs:
       - name: Install deps
         run: npm ci
 
-      - name: Tests + Coverage
+      - name: Tests + Coverage (Jest)
         run: npm run test:coverage
-        # لازم سكربتك يخرج lcov إلى coverage/lcov.info
+        # تأكد أن السكربت يولّد coverage/lcov.info
 
       - name: SonarCloud Scan (Frontend)
         uses: SonarSource/sonarcloud-github-action@v2
@@ -94,7 +94,7 @@ jobs:
           SONAR_TOKEN:  ${{ secrets.SONAR_TOKEN }}
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
-          projectBaseDir: .
+          projectBaseDir: frontend
           args: >
             -Dsonar.organization=${{ secrets.SONAR_ORG }}
             -Dsonar.projectKey=${{ secrets.SONAR_PROJECT_KEY_FE }}
@@ -106,7 +106,7 @@ jobs:
             -Dsonar.typescript.tsconfigPath=tsconfig.json
             -Dsonar.newCode.referenceBranch=main
 
-      - name: Upload Coverage (artifact)
+      - name: Upload Coverage (Frontend)
         if: always()
         uses: actions/upload-artifact@v4
         with:

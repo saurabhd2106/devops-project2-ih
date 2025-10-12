@@ -54,9 +54,10 @@ backend_max_replicas  = 3
 
 acr_name           = "acralotaibi826"
 acr_resource_group = "rg-dev-Abdullah-Alotaibi"
-enable_diagnostics           = true
+enable_diagnostics           = false 
 log_analytics_workspace_name = "la-workspace-name"
 log_analytics_workspace_rg   = "rg-dev-Abdullah-Alotaibi"
+
 
 
 

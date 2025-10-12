@@ -1,0 +1,14 @@
+[
+  {
+    "name": "backend",
+    "image": "yousefaloufi6/backend-app:latest",
+    "env": [
+      { "name": "DB_HOST", "value": "3tier-sqlserver.database.windows.net" },
+      { "name": "DB_NAME", "value": "3tier-db" },
+      { "name": "DB_USER", "value": "yousefaloufi1" },
+      { "name": "DB_PASS", "value": "P@ssward1234!" }
+    ],
+    "probes": [],
+    "resources": { "cpu": 0.5, "ephemeralStorage": "2Gi", "memory": "1Gi" }
+  }
+]

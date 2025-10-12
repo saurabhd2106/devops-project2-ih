@@ -34,8 +34,7 @@ nsg_rules = [
 
 private_endpoints = {}
 
-sql_admin_login    = "sqladmin"
-sql_admin_password = "hkhA12780-@"
+sql_admin_login    = "sqladmin" 
 
 frontend_image = "acralotaibi826.azurecr.io/frontend:v11"
 backend_image  = "acralotaibi826.azurecr.io/backend:v9"
